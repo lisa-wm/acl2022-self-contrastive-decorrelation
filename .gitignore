@@ -132,3 +132,4 @@ dmypy.json
 upload.sh
 data/
 scd_transformers/
+wandb/
