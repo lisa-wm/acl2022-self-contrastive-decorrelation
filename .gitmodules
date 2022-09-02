@@ -1,0 +1,8 @@
+[submodule "SentEval"]
+	path = SentEval
+	url = git@github.com:lisa-wm/SentEval.git
+
+[submodule "Uncertainty_aware_SSL"]
+        path = Uncertainty_aware_SSL
+        url = git@github.com:lisa-wm/SentEval.git
+
