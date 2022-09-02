@@ -6,5 +6,5 @@ python evaluation.py \
 --task_set transfer \
 --mode test \
 --model_name_or_path result/hardy-lion-21 \
---logfile logs_manual/test.json
+--logfile logfile.json
 
