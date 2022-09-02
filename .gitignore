@@ -130,6 +130,6 @@ dmypy.json
 
 # custom
 upload.sh
-#.gitmodules
+.gitmodules
 data/
 scd_transformers/
