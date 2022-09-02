@@ -21,6 +21,7 @@ from transformers.file_utils import (
     replace_return_docstrings,
 )
 from transformers.modeling_outputs import SequenceClassifierOutput, BaseModelOutputWithPoolingAndCrossAttentions
+from Uncertainty_aware_SSL.utils.losses import uncertainty_loss
 
 
 class MLPLayer(nn.Module):
@@ -115,10 +116,10 @@ def cl_init(cls, config):
     cls.pooler = Pooler(cls.model_args.pooler_type)
     cls.mlp = MLPLayer(config)
     cls.sim = Similarity(temp=cls.model_args.temp)
-   
+
     # SCD - BEGIN: projector
     sizes = [cls.config.embedding_dim] + \
-        list(map(int, cls.config.projector.split('-')))
+            list(map(int, cls.config.projector.split('-')))
     layers = []
     for i in range(len(sizes) - 2):
         if i == 0:
@@ -128,8 +129,14 @@ def cl_init(cls, config):
         layers.append(nn.BatchNorm1d(sizes[i + 1]))
         layers.append(nn.ReLU(inplace=True))
     layers.append(nn.Linear(sizes[-2], sizes[-1], bias=False))
-    cls.projector = nn.Sequential(*layers)
-    cls.bn = nn.BatchNorm1d(sizes[-1], affine=False)
+    projectors = [nn.Sequential(*layers) for _ in range(cls.model_args.n_projectors)]
+    normalizers = [
+        nn.BatchNorm1d(sizes[-1], affine=False)
+        for _ in range(cls.model_args.n_projectors)
+    ]
+    cls.projector = nn.ModuleList(projectors)
+    cls.bn = nn.ModuleList(normalizers)
+    # cls.proj_bn = nn.ModuleList([bn(proj) for proj, bn in zip(projectors, normalizers)])
     # SCD - END: projector
 
     cls.init_weights()
@@ -232,12 +239,12 @@ def cl_forward(cls,
     # Gather all embeddings if using distributed training
     if dist.is_initialized() and cls.training:
         # Gather hard negative
-        if num_sent >= 3:
-            z3_list = [torch.zeros_like(z3)
-                       for _ in range(dist.get_world_size())]
-            dist.all_gather(tensor_list=z3_list, tensor=z3.contiguous())
-            z3_list[dist.get_rank()] = z3
-            z3 = torch.cat(z3_list, 0)
+        # if num_sent >= 3:
+        #     z3_list = [torch.zeros_like(z3)
+        #                for _ in range(dist.get_world_size())]
+        #     dist.all_gather(tensor_list=z3_list, tensor=z3.contiguous())
+        #     z3_list[dist.get_rank()] = z3
+        #     z3 = torch.cat(z3_list, 0)
 
         # Dummy vectors for allgather
         z1_list = [torch.zeros_like(z1) for _ in range(dist.get_world_size())]
@@ -257,8 +264,26 @@ def cl_forward(cls,
     lambd = cls.config.task_lambda
 
     # empirical cross-correlation matrix
-    c = cls.bn(cls.projector(
-        (pooler_output[:, 0]))).T @ cls.bn(cls.projector((pooler_output[:, 1])))
+    # LISA add multiple heads
+    res1, res2 = [], []
+    cross_corr = []
+    for i in range(cls.model_args.n_projectors):
+        proj1 = cls.projector[i](z1)
+        bn1 = cls.bn[i](proj1)
+        res1.append(bn1)
+        proj2 = cls.projector[i](z2)
+        bn2 = cls.bn[i](proj2)
+        res2.append(bn2)
+        cross_corr.append(bn1.T @ bn2)
+
+    feat1 = torch.mean(torch.stack(res1), dim=0)
+    feat2 = torch.mean(torch.stack(res2), dim=0)
+    feat1_std = torch.sqrt(torch.var(torch.stack(res1), dim=0) + 0.0001)
+    feat2_std = torch.sqrt(torch.var(torch.stack(res2), dim=0) + 0.0001)
+    features = torch.cat([feat1.unsqueeze(1), feat2.unsqueeze(1)], dim=1)
+    features_std = torch.cat([feat1_std.unsqueeze(1), feat2_std.unsqueeze(1)], dim=1)
+
+    c = sum(cross_corr) / len(cross_corr)
 
     # sum the cross-correlation matrix between all gpus
     c.div_(len(z1))
@@ -268,13 +293,14 @@ def cl_forward(cls,
 
     decorrelation = on_diag + lambd * off_diag
 
-    self_contrast = torch.diag(
-        cls.sim(z1.unsqueeze(1), z2.unsqueeze(0))).mean()
+    self_contrast = torch.diag(cls.sim(z1.unsqueeze(1), z2.unsqueeze(0))).mean()
 
-    loss = cls.config.task_alpha * self_contrast + cls.config.task_beta * decorrelation
+    loss = (
+        cls.config.task_alpha * self_contrast + cls.config.task_beta * decorrelation
+    )
 
     # SCD BEGIN: SimCSE legacy code
-    
+
     # # Hard negative
     # if num_sent >= 3:
     #     z1_z3_cos = cls.sim(z1.unsqueeze(
@@ -306,7 +332,14 @@ def cl_forward(cls,
         prediction_scores = cls.lm_head(mlm_outputs.last_hidden_state)
         masked_lm_loss = loss_fct(
             prediction_scores.view(-1, cls.config.vocab_size), mlm_labels.view(-1))
-        loss = loss + cls.model_args.mlm_weight * masked_lm_loss
+        loss += cls.model_args.mlm_weight * masked_lm_loss
+
+    # LISA add loss component
+    loss_unc = uncertainty_loss(features, features_std)
+    if torch.cuda.is_available():
+        loss_unc = loss_unc.cuda()
+    print(f'---> loss SCD: {loss:.2f}, loss OURS: {loss_unc:.2f}')
+    loss += cls.model_args.lambda_unc * loss_unc
 
     if not return_dict:
         output = (loss,) + outputs[2:]
@@ -320,20 +353,19 @@ def cl_forward(cls,
 
 
 def sentemb_forward(
-    cls,
-    encoder,
-    input_ids=None,
-    attention_mask=None,
-    token_type_ids=None,
-    position_ids=None,
-    head_mask=None,
-    inputs_embeds=None,
-    labels=None,
-    output_attentions=None,
-    output_hidden_states=None,
-    return_dict=None,
+        cls,
+        encoder,
+        input_ids=None,
+        attention_mask=None,
+        token_type_ids=None,
+        position_ids=None,
+        head_mask=None,
+        inputs_embeds=None,
+        labels=None,
+        output_attentions=None,
+        output_hidden_states=None,
+        return_dict=None,
 ):
-
     return_dict = return_dict if return_dict is not None else cls.config.use_return_dict
 
     outputs = encoder(
@@ -353,7 +385,7 @@ def sentemb_forward(
     # SCD BEGIN: SimCSE legacy code
     # if cls.pooler_type == "cls" and not cls.model_args.mlp_only_train:
     #     pooler_output = cls.mlp(pooler_output)
-     # SCD END: SimCSE legacy code
+    # SCD END: SimCSE legacy code
 
     if not return_dict:
         return (outputs[0], pooler_output) + outputs[2:]

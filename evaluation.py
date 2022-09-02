@@ -12,7 +12,7 @@ PATH_TO_DATA = './SentEval/data'
 
 # Import SentEval
 sys.path.insert(0, PATH_TO_SENTEVAL)
-import senteval
+from SentEval.senteval.engine import SE
 from transformers import AutoModel, AutoTokenizer
 import transformers
 import torch
@@ -20,7 +20,8 @@ from prettytable import PrettyTable
 import argparse
 import logging
 import numpy as np
-
+import json
+from typing import Final, List
 
 # Set up logger
 logging.basicConfig(format='%(asctime)s : %(message)s', level=logging.DEBUG)
@@ -28,6 +29,9 @@ logging.basicConfig(format='%(asctime)s : %(message)s', level=logging.DEBUG)
 
 # Import SentEval
 sys.path.insert(0, PATH_TO_SENTEVAL)
+
+TRANSFERTASKS: Final[List[str]] = ['MR']
+# ['MR', 'CR', 'MPQA', 'SUBJ', 'SST2', 'TREC', 'MRPC']
 
 
 def print_table(task_names, scores):
@@ -59,6 +63,10 @@ def main():
                                  'MR', 'CR', 'MPQA', 'SUBJ', 'SST2', 'TREC', 'MRPC',
                                  'SICKRelatedness', 'STSBenchmark'],
                         help="Tasks to evaluate on. If '--task_set' is specified, this will be overridden")
+    # LISA add arguments
+    parser.add_argument(
+        "--logfile", type=str, help='path to logfile (ending: .json) to save results'
+    )
 
     args = parser.parse_args()
 
@@ -73,11 +81,11 @@ def main():
         args.tasks = ['STS12', 'STS13', 'STS14', 'STS15',
                       'STS16', 'STSBenchmark', 'SICKRelatedness']
     elif args.task_set == 'transfer':
-        args.tasks = ['MR', 'CR', 'MPQA', 'SUBJ', 'SST2', 'TREC', 'MRPC']
+        args.tasks = TRANSFERTASKS
     elif args.task_set == 'full':
         args.tasks = ['STS12', 'STS13', 'STS14', 'STS15',
                       'STS16', 'STSBenchmark', 'SICKRelatedness']
-        args.tasks += ['MR', 'CR', 'MPQA', 'SUBJ', 'SST2', 'TREC', 'MRPC']
+        args.tasks += TRANSFERTASKS
     elif args.task_set == 'subset':
         args.tasks = ['STS12', 'STS13']
         args.tasks += ['MR', 'SST2', 'TREC', 'MRPC']
@@ -90,7 +98,8 @@ def main():
                                 'tenacity': 3, 'epoch_size': 2}
     elif args.mode == 'test':
         # Full mode
-        params = {'task_path': PATH_TO_DATA, 'usepytorch': True, 'kfold': 10}
+        # TODO change back to 10 folds
+        params = {'task_path': PATH_TO_DATA, 'usepytorch': True, 'kfold': 2}
         params['classifier'] = {'nhid': 0, 'optim': 'adam', 'batch_size': 64,
                                 'tenacity': 5, 'epoch_size': 4}
     else:
@@ -159,9 +168,10 @@ def main():
             raise NotImplementedError
 
     results = {}
+    log = {}
 
     for task in args.tasks:
-        se = senteval.engine.SE(params, batcher, prepare)
+        se = SE(params, batcher, prepare)
         result = se.eval(task)
         results[task] = result
 
@@ -178,11 +188,11 @@ def main():
                               (results[task]['dev']['spearman'][0] * 100))
             else:
                 scores.append("0.00")
-        print_table(task_names, scores)
+        # print_table(task_names, scores)
 
         task_names = []
         scores = []
-        for task in ['MR', 'CR', 'SUBJ', 'MPQA', 'SST2', 'TREC', 'MRPC']:
+        for task in TRANSFERTASKS:
             task_names.append(task)
             if task in results:
                 scores.append("%.2f" % (results[task]['devacc']))
@@ -191,41 +201,46 @@ def main():
         task_names.append("Avg.")
         scores.append("%.2f" % (sum([float(score)
                       for score in scores]) / len(scores)))
-        print_table(task_names, scores)
+        # print_table(task_names, scores)
 
     elif args.mode == 'test' or args.mode == 'fasttest':
         print("------ %s ------" % (args.mode))
 
-        task_names = []
-        scores = []
-        for task in ['STS12', 'STS13', 'STS14', 'STS15', 'STS16', 'STSBenchmark', 'SICKRelatedness']:
-            task_names.append(task)
-            if task in results:
-                if task in ['STS12', 'STS13', 'STS14', 'STS15', 'STS16']:
-                    scores.append(
-                        "%.2f" % (results[task]['all']['spearman']['all'] * 100))
-                else:
-                    scores.append(
-                        "%.2f" % (results[task]['test']['spearman'].correlation * 100))
-            else:
-                scores.append("0.00")
-        task_names.append("Avg.")
-        scores.append("%.2f" % (sum([float(score)
-                      for score in scores]) / len(scores)))
-        print_table(task_names, scores)
+        # task_names = []
+        # scores = []
+        # for task in ['STS12', 'STS13', 'STS14', 'STS15', 'STS16', 'STSBenchmark', 'SICKRelatedness']:
+        #     task_names.append(task)
+        #     if task in results:
+        #         if task in ['STS12', 'STS13', 'STS14', 'STS15', 'STS16']:
+        #             scores.append(
+        #                 "%.2f" % (results[task]['all']['spearman']['all'] * 100))
+        #         else:
+        #             scores.append(
+        #                 "%.2f" % (results[task]['test']['spearman'].correlation * 100))
+        #     else:
+        #         scores.append("0.00")
+        # task_names.append("Avg.")
+        # scores.append("%.2f" % (sum([float(score)
+        #               for score in scores]) / len(scores)))
+        # print_table(task_names, scores)
 
-        task_names = []
+        task_names = TRANSFERTASKS
         scores = []
-        for task in ['MR', 'CR', 'SUBJ', 'MPQA', 'SST2', 'TREC', 'MRPC']:
-            task_names.append(task)
+        for task in task_names:
             if task in results:
-                scores.append("%.2f" % (results[task]['acc']))
+                score = "%.2f" % (results[task]['acc'])
+                scores.append(score)
+                log.update({f'acc_{task}': score})
+                log.update({f'unc_{task}': results[task]['unc']})
             else:
                 scores.append("0.00")
-        task_names.append("Avg.")
         scores.append("%.2f" % (sum([float(score)
                       for score in scores]) / len(scores)))
-        print_table(task_names, scores)
+        # print_table(task_names, scores)
+
+    # LISA write results to file
+    with open(args.logfile, 'w', encoding='utf-8') as f:
+        json.dump(log, f, ensure_ascii=False, indent=4)
 
 
 if __name__ == "__main__":

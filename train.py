@@ -177,6 +177,19 @@ class ModelArguments:
             "help": "FC MLP architecture of projector"
         },
     )
+    # LISA add arguments
+    n_projectors: int = field(
+        default=2,
+        metadata={
+            "help": "Number of projectors"
+        },
+    )
+    lambda_unc: float = field(
+        default=1.0,
+        metadata={
+            "help": "Coefficient for uncertainty loss component"
+        },
+    )
 
 
 
