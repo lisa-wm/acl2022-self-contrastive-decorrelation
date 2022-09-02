@@ -62,6 +62,7 @@ from torch.utils.data.dataloader import DataLoader
 from torch.utils.data.dataset import Dataset
 from torch.utils.data.distributed import DistributedSampler
 from torch.utils.data.sampler import RandomSampler, SequentialSampler
+from SentEval.senteval.engine import SE
 
 if is_torch_tpu_available():
     import torch_xla.core.xla_model as xm
@@ -142,7 +143,7 @@ class CLTrainer(Trainer):
         params['classifier'] = {'nhid': 0, 'optim': 'rmsprop', 'batch_size': 128,
                                             'tenacity': 3, 'epoch_size': 2}
 
-        se = senteval.engine.SE(params, batcher, prepare)
+        se = SE(params, batcher, prepare)
         tasks = ['STSBenchmark', 'SICKRelatedness']
         if eval_senteval_transfer or self.args.eval_transfer:
             tasks = ['STSBenchmark', 'SICKRelatedness', 'MR', 'CR', 'SUBJ', 'MPQA', 'SST2', 'TREC', 'MRPC']
