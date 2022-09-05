@@ -120,16 +120,18 @@ def cl_init(cls, config):
     # SCD - BEGIN: projector
     sizes = [cls.config.embedding_dim] + \
             list(map(int, cls.config.projector.split('-')))
-    layers = []
-    for i in range(len(sizes) - 2):
-        if i == 0:
-            layers.append(nn.Linear(sizes[i], sizes[i + 1], bias=True))
-        else:
-            layers.append(nn.Linear(sizes[i], sizes[i + 1], bias=False))
-        layers.append(nn.BatchNorm1d(sizes[i + 1]))
-        layers.append(nn.ReLU(inplace=True))
-    layers.append(nn.Linear(sizes[-2], sizes[-1], bias=False))
-    projectors = [nn.Sequential(*layers) for _ in range(cls.model_args.n_projectors)]
+    projectors, normalizers = [], []
+    for _ in range(cls.model_args.n_projectors):
+        layers = []
+        for j in range(len(sizes) - 2):
+            if j == 0:
+                layers.append(nn.Linear(sizes[j], sizes[j + 1], bias=True))
+            else:
+                layers.append(nn.Linear(sizes[j], sizes[j + 1], bias=False))
+            layers.append(nn.BatchNorm1d(sizes[j + 1]))
+            layers.append(nn.ReLU(inplace=True))
+        layers.append(nn.Linear(sizes[-2], sizes[-1], bias=False))
+        projectors.append(nn.Sequential(*layers))
     normalizers = [
         nn.BatchNorm1d(sizes[-1], affine=False)
         for _ in range(cls.model_args.n_projectors)
@@ -340,6 +342,7 @@ def cl_forward(cls,
         loss_unc = loss_unc.cuda()
     print(f'---> loss SCD: {loss:.2f}, loss OURS: {loss_unc:.2f}')
     loss += cls.model_args.lambda_unc * loss_unc
+    print(f'---> total loss: {loss:.2f}')
 
     if not return_dict:
         output = (loss,) + outputs[2:]
