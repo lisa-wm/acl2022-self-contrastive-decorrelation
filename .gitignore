@@ -133,3 +133,4 @@ upload.sh
 data/
 scd_transformers/
 wandb/
+result/

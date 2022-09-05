@@ -18,7 +18,7 @@ python train.py \
 --n_projectors=2 \
 --num_train_epochs=2 \
 --output_dir=result \
---per_device_train_batch_size=192 \
+--per_device_train_batch_size=96 \
 --report_to=wandb \
 --save_total_limit=0 \
 --task_alpha=1 \
