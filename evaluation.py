@@ -30,8 +30,7 @@ logging.basicConfig(format='%(asctime)s : %(message)s', level=logging.DEBUG)
 # Import SentEval
 sys.path.insert(0, PATH_TO_SENTEVAL)
 
-TRANSFERTASKS: Final[List[str]] = ['MR']
-# ['MR', 'CR', 'MPQA', 'SUBJ', 'SST2', 'TREC', 'MRPC']
+TRANSFERTASKS: Final[List[str]] = ['MR', 'CR', 'MPQA', 'SUBJ', 'SST2', 'TREC', 'MRPC']
 
 
 def print_table(task_names, scores):
