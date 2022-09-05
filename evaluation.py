@@ -12,7 +12,7 @@ PATH_TO_DATA = './SentEval/data'
 
 # Import SentEval
 sys.path.insert(0, PATH_TO_SENTEVAL)
-from SentEval.senteval.engine import SE
+from SentEval.senteval_lisa.engine import SE
 from transformers import AutoModel, AutoTokenizer
 import transformers
 import torch
