@@ -288,7 +288,6 @@ def cl_forward(cls,
         feat2_std = torch.zeros(feat2.shape)
     features = torch.cat([feat1.unsqueeze(1), feat2.unsqueeze(1)], dim=1)
     features_std = torch.cat([feat1_std.unsqueeze(1), feat2_std.unsqueeze(1)], dim=1)
-    breakpoint()
 
     c = sum(cross_corr) / len(cross_corr)
 
