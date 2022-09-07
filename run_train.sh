@@ -14,7 +14,7 @@ python train.py \
 --max_seq_length=32 \
 --metric_for_best_model=sickr_spearman \
 --model_name_or_path=bert-base-uncased \
---n_projectors=2 \
+--n_projectors=1 \
 --num_train_epochs=5 \
 --output_dir=result \
 --per_device_train_batch_size=192 \
@@ -25,5 +25,5 @@ python train.py \
 --task_lambda=0.012 \
 --temp=0.05 \
 --train_file=data/wiki1m_for_simcse.txt \
---alpha_unc=0.01 \
+--alpha_unc=0.0 \
 
