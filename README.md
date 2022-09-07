@@ -37,5 +37,7 @@ Original proposal bei Klein & Nabi (2022, [arXiv:2203.07847v1](https://arxiv.org
 ## Usage
 
 1. Run `bash run_train.sh` (possibly with modified config)
+   * `alpha_unc`: coefficient on regularizer penalizing standard deviation between features output by different projector heads $\rightsquigarrow$ similarity
+   * `lambda_unc`: cap on standard deviation $\rightsquigarrow$ diversity
 2. Run `bash run_eval.sh` (possibly with modified config)
 3. Find the results in the file specified as `--logfile` in `run_eval.sh` (e.g., `logfile.json`)
