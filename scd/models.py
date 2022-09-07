@@ -21,7 +21,7 @@ from transformers.file_utils import (
     replace_return_docstrings,
 )
 from transformers.modeling_outputs import SequenceClassifierOutput, BaseModelOutputWithPoolingAndCrossAttentions
-from Uncertainty_aware_SSL.utils.losses import uncertainty_loss
+from Uncertainty_aware_SSL.utils.losses import STDCapRegularizer
 
 
 class MLPLayer(nn.Module):
@@ -346,8 +346,6 @@ def cl_forward(cls,
         uncertainty_penalty = uncertainty_penalty.cuda()
     print(f'---> loss SCD: {loss:.2f}, loss OURS: {uncertainty_penalty:.2f}')
     loss += cls.model_args.alpha_unc * uncertainty_penalty
-    print(f'---> loss SCD: {loss:.2f}, loss OURS: {loss_unc:.2f}')
-    loss += cls.model_args.lambda_unc * loss_unc
     print(f'---> total loss: {loss:.2f}')
 
     if not return_dict:
