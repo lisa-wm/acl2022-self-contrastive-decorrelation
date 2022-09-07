@@ -7,7 +7,7 @@ python train.py \
 --description=SCD \
 --eval_steps=250 \
 --evaluation_strategy=steps \
---fp-16\
+--fp16 \
 --hidden_dropout_prob=0.05 \
 --hidden_dropout_prob_noise=0.155 \
 --learning_rate=3e-05 \
