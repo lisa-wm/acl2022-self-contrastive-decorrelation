@@ -13,7 +13,7 @@ python train.py \
 --lambda_unc=10.0 \
 --learning_rate=3e-05 \
 --max_seq_length=32 \
---max_steps=2 \
+--max_steps=5 \
 --metric_for_best_model=sickr_spearman \
 --model_name_or_path=bert-base-uncased \
 --n_projectors=2 \
