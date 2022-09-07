@@ -284,8 +284,8 @@ def cl_forward(cls,
         feat1_std = torch.sqrt(torch.var(torch.stack(res1), dim=0) + 0.0001)
         feat2_std = torch.sqrt(torch.var(torch.stack(res2), dim=0) + 0.0001)
     else:  # otherwise, torch.var produces nan
-        feat1_std = torch.ones(feat1.shape)
-        feat2_std = torch.ones(feat2.shape)
+        feat1_std = torch.zeros(feat1.shape)
+        feat2_std = torch.zeros(feat2.shape)
     features = torch.cat([feat1.unsqueeze(1), feat2.unsqueeze(1)], dim=1)
     features_std = torch.cat([feat1_std.unsqueeze(1), feat2_std.unsqueeze(1)], dim=1)
     breakpoint()
