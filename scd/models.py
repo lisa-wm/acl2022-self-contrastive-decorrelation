@@ -335,11 +335,17 @@ def cl_forward(cls,
         loss += cls.model_args.mlm_weight * masked_lm_loss
 
     # LISA add loss component
-    loss_unc = uncertainty_loss(features, features_std)
+    print(f'---> feature STD: {features_std:.2f}')
+    # LISA add loss component
+    uncertainty_regularizer = STDCapRegularizer(
+        features, features_std, cls.model_args.lambda_unc
+    )
+    uncertainty_penalty = uncertainty_regularizer.loss()
     if torch.cuda.is_available():
-        loss_unc = loss_unc.cuda()
-    print(f'---> loss SCD: {loss:.2f}, loss OURS: {loss_unc:.2f}')
-    loss += cls.model_args.lambda_unc * loss_unc
+        uncertainty_penalty = uncertainty_penalty.cuda()
+    print(f'---> loss SCD: {loss:.2f}, loss OURS: {uncertainty_penalty:.2f}')
+    loss += cls.model_args.alpha_unc * uncertainty_penalty
+    print(f'---> total loss: {loss:.2f}')
 
     if not return_dict:
         output = (loss,) + outputs[2:]
