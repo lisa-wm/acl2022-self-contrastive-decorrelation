@@ -7,5 +7,5 @@ python evaluation.py \
 --task_set transfer \
 --mode test \
 --model_name_or_path $LATESTRESULT \
---logfile logfile.json
-
+--logfile logfile.json \
+--testconfig heads1_noregu

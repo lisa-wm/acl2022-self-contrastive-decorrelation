@@ -66,6 +66,9 @@ def main():
     parser.add_argument(
         "--logfile", type=str, help='path to logfile (ending: .json) to save results'
     )
+    parser.add_argument(
+        "--testconfig", type=str, help='verbal description of configuration'
+    )
 
     args = parser.parse_args()
 
@@ -238,6 +241,7 @@ def main():
         # print_table(task_names, scores)
 
     # LISA write results to file
+    log.update({'testconfig': args.testconfig})
     with open(args.logfile, 'w', encoding='utf-8') as f:
         json.dump(log, f, ensure_ascii=False, indent=4)
 

@@ -26,5 +26,4 @@ python train.py \
 --temp=0.05 \
 --train_file=data/wiki1m_for_simcse.txt \
 --alpha_unc=0.01 \
---lambda_unc=10.0 \
 
