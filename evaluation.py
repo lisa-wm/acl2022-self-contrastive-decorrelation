@@ -241,7 +241,7 @@ def main():
         # print_table(task_names, scores)
 
     # LISA write results to file
-    log.update({'testconfig': args.testconfig})
+    log.update({'testconfig': str(args.testconfig)})
     with open(args.logfile, 'w', encoding='utf-8') as f:
         json.dump(log, f, ensure_ascii=False, indent=4)
 
