@@ -100,8 +100,7 @@ def main():
                                 'tenacity': 3, 'epoch_size': 2}
     elif args.mode == 'test':
         # Full mode
-        # TODO change back to 10 folds
-        params = {'task_path': PATH_TO_DATA, 'usepytorch': True, 'kfold': 2}
+        params = {'task_path': PATH_TO_DATA, 'usepytorch': True, 'kfold': 10}
         params['classifier'] = {'nhid': 0, 'optim': 'adam', 'batch_size': 64,
                                 'tenacity': 5, 'epoch_size': 4}
     else:
