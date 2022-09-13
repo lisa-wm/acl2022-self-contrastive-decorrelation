@@ -341,8 +341,6 @@ def cl_forward(cls,
         loss += cls.model_args.mlm_weight * masked_lm_loss
 
     # LISA add loss component
-    mean_std = torch.sum(features_std) / features.shape[0]
-    print(f'---> feature STD: {mean_std:.2f}')
 
     if cls.model_args.lambda2_unc > 0:
         uncertainty_regularizer = STDCapRegularizer(
@@ -352,6 +350,8 @@ def cl_forward(cls,
     else:
         uncertainty_regularizer = STDMinimizer(features, features_std)
         uncertainty_penalty = uncertainty_regularizer.loss()
+        mean_std = torch.sum(features_std) / features.shape[0]
+        print(f'---> feature STD: {mean_std:.2f}')
 
     if torch.cuda.is_available():
         uncertainty_penalty = uncertainty_penalty.cuda()
