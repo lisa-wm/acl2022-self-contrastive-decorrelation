@@ -184,18 +184,19 @@ class ModelArguments:
             "help": "Number of projectors"
         },
     )
-    alpha_unc: float = field(
-        default=10.0,
-        metadata={
-            "help": "STD cap for uncertainty regularizer"
-        },
-    )
-    lambda_unc: float = field(
+    lambda1_unc: float = field(
         default=1.0,
         metadata={
             "help": "Coefficient for uncertainty regularizer"
         },
     )
+    lambda2_unc: float = field(
+        default=10.0,
+        metadata={
+            "help": "STD cap for uncertainty regularizer"
+        },
+    )
+
 
 
 

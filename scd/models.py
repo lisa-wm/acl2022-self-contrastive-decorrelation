@@ -21,7 +21,7 @@ from transformers.file_utils import (
     replace_return_docstrings,
 )
 from transformers.modeling_outputs import SequenceClassifierOutput, BaseModelOutputWithPoolingAndCrossAttentions
-from Uncertainty_aware_SSL.utils.losses import STDMinimizer
+from Uncertainty_aware_SSL.utils.losses import STDMinimizer, STDCapRegularizer
 
 
 class MLPLayer(nn.Module):
@@ -343,15 +343,20 @@ def cl_forward(cls,
     # LISA add loss component
     mean_std = torch.sum(features_std) / features.shape[0]
     print(f'---> feature STD: {mean_std:.2f}')
-    # uncertainty_regularizer = STDCapRegularizer(
-    #     features, features_std, cls.model_args.lambda_unc
-    # )
-    uncertainty_regularizer = STDMinimizer(features, features_std)
-    uncertainty_penalty = uncertainty_regularizer.loss()
+
+    if cls.model_args.lambda2_unc > 0:
+        uncertainty_regularizer = STDMinimizer(features, features_std)
+        uncertainty_penalty = uncertainty_regularizer.loss()
+    else:
+        uncertainty_regularizer = STDCapRegularizer(
+            features, features_std, cls.model_args.lambda2_unc
+        )
+        uncertainty_penalty = uncertainty_regularizer.loss()
+
     if torch.cuda.is_available():
         uncertainty_penalty = uncertainty_penalty.cuda()
     print(f'---> loss SCD: {loss:.2f}, loss OURS: {uncertainty_penalty:.2f}')
-    loss += cls.model_args.alpha_unc * uncertainty_penalty
+    loss += cls.model_args.lambda1_unc * uncertainty_penalty
     print(f'---> total loss: {loss:.2f}')
 
     if not return_dict:
