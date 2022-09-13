@@ -8,4 +8,4 @@ python evaluation.py \
 --mode test \
 --model_name_or_path $LATESTRESULT \
 --logfile logfile.json \
---testconfig heads1_noregu_vibrant-mountain-57
+--testconfig heads5_regu_bright-frost-59
