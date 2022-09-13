@@ -345,12 +345,12 @@ def cl_forward(cls,
     print(f'---> feature STD: {mean_std:.2f}')
 
     if cls.model_args.lambda2_unc > 0:
-        uncertainty_regularizer = STDMinimizer(features, features_std)
-        uncertainty_penalty = uncertainty_regularizer.loss()
-    else:
         uncertainty_regularizer = STDCapRegularizer(
             features, features_std, cls.model_args.lambda2_unc
         )
+        uncertainty_penalty = uncertainty_regularizer.loss()
+    else:
+        uncertainty_regularizer = STDMinimizer(features, features_std)
         uncertainty_penalty = uncertainty_regularizer.loss()
 
     if torch.cuda.is_available():
