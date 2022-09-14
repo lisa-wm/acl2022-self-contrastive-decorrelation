@@ -15,7 +15,7 @@ python train.py \
 --metric_for_best_model=sickr_spearman \
 --model_name_or_path=bert-base-uncased \
 --n_projectors=5 \
---num_train_epochs=1 \
+--num_train_epochs=2 \
 --output_dir=result \
 --per_device_train_batch_size=96 \
 --report_to=wandb \
