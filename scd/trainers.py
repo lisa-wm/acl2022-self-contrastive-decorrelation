@@ -150,6 +150,8 @@ class CLTrainer(Trainer):
             tasks = ['STSBenchmark', 'SICKRelatedness', 'MR', 'CR', 'SUBJ', 'MPQA', 'SST2', 'TREC', 'MRPC']
         self.model.eval()
         results = se.eval(tasks)
+        se_unc = se_lisa.SE(params, batcher, prepare)
+        results_unc = se_unc.eval(tasks)
         breakpoint()
         
         stsb_spearman = results['STSBenchmark']['dev']['spearman'][0]
