@@ -63,7 +63,6 @@ from torch.utils.data.dataset import Dataset
 from torch.utils.data.distributed import DistributedSampler
 from torch.utils.data.sampler import RandomSampler, SequentialSampler
 from SentEval.senteval.engine import SE
-import SentEval.senteval_lisa.engine as se_lisa
 
 if is_torch_tpu_available():
     import torch_xla.core.xla_model as xm
@@ -150,9 +149,6 @@ class CLTrainer(Trainer):
             tasks = ['STSBenchmark', 'SICKRelatedness', 'MR', 'CR', 'SUBJ', 'MPQA', 'SST2', 'TREC', 'MRPC']
         self.model.eval()
         results = se.eval(tasks)
-        se_unc = se_lisa.SE(params, batcher, prepare)
-        results_unc = se_unc.eval(tasks)
-        breakpoint()
         
         stsb_spearman = results['STSBenchmark']['dev']['spearman'][0]
         sickr_spearman = results['SICKRelatedness']['dev']['spearman'][0]
