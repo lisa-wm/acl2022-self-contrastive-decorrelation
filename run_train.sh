@@ -26,5 +26,5 @@ python train.py \
 --temp=0.05 \
 --train_file=data/wiki1m_for_simcse.txt \
 --lambda1_unc=0.01 \
---lambda2_unc=1.0
+--lambda2_unc=0.1
 
